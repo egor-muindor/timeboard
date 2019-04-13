@@ -1,5 +1,9 @@
-import requests
+try:
+    import requests
+except ImportError as e:
 
+    print('Не найдены необходимые библиотеки (%s)' % e.name)
+    exit(500)
 
 class Timeboard():
 
