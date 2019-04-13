@@ -107,14 +107,6 @@ def find_professor(name=''):
 
 
 def menu():
-    try:
-        file = open('data.json')
-        file.close()
-    except IOError:
-        print('База не найдена, началась загрузка..\n')
-        download_timeboards()
-    else:
-        print('База обнаружена')
     print(
         '''
         Меню:
@@ -133,4 +125,14 @@ def menu():
         download_timeboards()
 
 
-menu()
+try:
+    file = open('data.json')
+    file.close()
+except IOError:
+    print('База не найдена, началась загрузка..\n')
+    download_timeboards()
+else:
+    print('База обнаружена')
+0
+while True:
+    menu()
