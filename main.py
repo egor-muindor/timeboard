@@ -1,8 +1,12 @@
-import json
-import time
-from operator import itemgetter
+try:
+    import json
+    import time
+    from operator import itemgetter
+    from timeboard import Timeboard
+except ImportError as e:
 
-from timeboard import Timeboard
+    print('Не найдены необходимые библиотеки (%s)' % e.name)
+    exit(500)
 
 
 def download_timeboards():
@@ -107,10 +111,12 @@ def menu():
         file = open('data.json')
         file.close()
     except IOError:
-        print('База не найдена, началась загрузка')
+        print('База не найдена, началась загрузка..\n')
         download_timeboards()
+    else:
+        print('База обнаружена')
     print(
-        '''\n
+        '''
         Меню:
         0) Выход
         1) Найти пары преподавателя по части ФИО
