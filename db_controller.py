@@ -13,11 +13,8 @@ class DatabaseController:
     def __setup_db__(self):
         c = self.connect.cursor()
         c.execute('DROP TABLE IF EXISTS pairs;')
-        self.connect.commit()
         c.execute('DROP TABLE IF EXISTS teachers;')
-        self.connect.commit()
         c.execute('DROP TABLE IF EXISTS groups;')
-        self.connect.commit()
         c.execute('DROP INDEX IF EXISTS pairs.pair_index;')
         self.connect.commit()
         c.execute(
@@ -28,14 +25,12 @@ class DatabaseController:
                 name STRING (15)  NOT NULL
             );'''
         )
-        self.connect.commit()
         c.execute('''
             CREATE TABLE IF NOT EXISTS teachers (
                 id   INTEGER      PRIMARY KEY AUTOINCREMENT NOT NULL 
                                   NOT NULL,
                 name STRING (150) NOT NULL
             );''')
-        self.connect.commit()
         c.execute('''
             CREATE TABLE IF NOT EXISTS pairs (
                 id          INTEGER      PRIMARY KEY AUTOINCREMENT NOT NULL 
@@ -53,7 +48,6 @@ class DatabaseController:
                 teacher_id  INTEGER      REFERENCES teachers (id) ON DELETE CASCADE
                                          NOT NULL
             );''')
-        self.connect.commit()
         c.execute('''
         CREATE INDEX IF NOT EXISTS pair_index ON pairs (
             id ASC,
@@ -66,31 +60,22 @@ class DatabaseController:
         c.close()
 
     def insert_group(self, group):
-
         c = self.connect.cursor()
         c.execute('''
             INSERT INTO groups (name) VALUES (?);
         ''', (group,))
-        self.connect.commit()
         c.execute('SELECT id, name FROM groups where name=?', (group,))
-        result = c.fetchone()[0]
-        c.close()
-        return result
+        return c.fetchone()[0]
 
     def insert_teacher(self, teacher):
-
         c = self.connect.cursor()
         c.execute('''
                     INSERT INTO teachers (name) VALUES (?);
                 ''', (teacher,))
-        self.connect.commit()
         c.execute('SELECT id, name FROM teachers WHERE name=?', (teacher,))
-        result = c.fetchone()[0]
-        c.close()
-        return result
+        return c.fetchone()[0]
 
     def insert_pair(self, pair):
-
         c = self.connect.cursor()
         c.execute('''
                     INSERT INTO pairs (
@@ -107,15 +92,11 @@ class DatabaseController:
                   )
                   VALUES (?,?,?,?,?,?,?,?,?,?);
                 ''', pair)
-        self.connect.commit()
-        c.close()
 
     def find_teacher(self, name):
         c = self.connect.cursor()
-        c.execute("SELECT id, name from teachers where name=?", (name,))
-        self.connect.commit()
+        c.execute("SELECT id, name from teachers where name LIKE ? LIMIT 30", ("%{}%".format(name.title()),))
         result = c.fetchall()
-        c.close()
         if not result:
             return False
         else:
@@ -124,20 +105,16 @@ class DatabaseController:
     def find_or_new_teacher(self, name):
         c = self.connect.cursor()
         c.execute("SELECT id, name from teachers where name=?", (name,))
-        self.connect.commit()
         result = c.fetchone()
-        c.close()
         if not result:
             return self.insert_teacher(name)
         else:
             return result[0]
 
     def import_from_json(self, file):
-
         f = open(file, "r", encoding='utf-8')
         data = json.loads(f.read())
         f.close()
-
         for timeboard in data:
             group_id = self.insert_group(timeboard['group']['title'])
             for key_day, day in timeboard.get('grid').items():
@@ -154,7 +131,6 @@ class DatabaseController:
                                 if 'date_to' not in pair or 'date_from' not in pair:
                                     pair['date_to'] = ''
                                     pair['date_from'] = ''
-
                                 pair_data = (
                                     teacher_id,
                                     group_id,
@@ -170,6 +146,9 @@ class DatabaseController:
                                 self.insert_pair(pair_data)
                             except():
                                 print(pair)
+
+        self.connect.commit()
+        # self.connect.close()
 
 
 t = time.time()
