@@ -47,12 +47,12 @@ def download_timeboards():
 
 def convert_day(day):
     days = {
-        '1': 'Понедельник',
-        '2': 'Вторник',
-        '3': 'Среда',
-        '4': 'Четверг',
-        '5': 'Пятница',
-        '6': 'Суббота',
+        '1': 'в понедельник',
+        '2': 'во вторник',
+        '3': 'в среду',
+        '4': 'в четверг',
+        '5': 'в пятницу',
+        '6': 'в суббота',
     }
     if day in days:
         return days[day]
@@ -96,7 +96,7 @@ def find_professor(name=''):
     if result:
         for each in result:
             print(
-                'Пара у {professor_name} будет в {day}, в {pair_time}, '
+                'Пара у {professor_name} будет {day}, в {pair_time}, '
                 'в аудитории {auditory}. Группа "{group_id}"'
                     .format_map(each)
             )
@@ -123,7 +123,13 @@ def menu():
     elif choice in '2':
         print('Обновление базы займет какое то время, пожалуйста подождите')
         download_timeboards()
-
+    elif choice in '3':
+        print('Началась загрузка базы, пожалуйста подождите')
+        t = Timeboard()
+        data = t.download_all_groups()
+        f = open("all_data_session.json", "w", encoding='utf-8')
+        f.write(json.dumps(data, ensure_ascii=False, sort_keys=True, indent=4))
+        f.close()
 
 try:
     file = open('data.json')
@@ -133,6 +139,6 @@ except IOError:
     download_timeboards()
 else:
     print('База обнаружена')
-0
+
 while True:
     menu()

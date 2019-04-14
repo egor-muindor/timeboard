@@ -5,6 +5,7 @@ except ImportError as e:
     print('Не найдены необходимые библиотеки (%s)' % e.name)
     exit(500)
 
+
 class Timeboard():
 
     def __init__(self):
@@ -25,21 +26,38 @@ class Timeboard():
 
         return group_list
 
-    def get_timeboard_by_group_id(self, id):
+    def get_timeboard_by_group_id(self, id, session=0):
         headers = {
             'cookie': self.cookies,
             'Referer': 'https://rasp.dmami.ru/site/',
         }
         group = {
-            'session': 0,
+            'session': session,
             'group': id,
         }
-        timeboard = self.session.get("https://rasp.dmami.ru/site/group", headers=headers, params=group).json()
+        try:
+            timeboard = self.session.get("https://rasp.dmami.ru/site/group", headers=headers, params=group).json()
+        except:
+            return False
 
         if timeboard['status'] == 'error':
             return False
 
         return timeboard
+
+    def download_all_groups(self, session=0):
+        groups = self.group_list
+        result = []
+        counter = 0
+        for group in groups:
+            data = self.get_timeboard_by_group_id(group, session)
+            counter += 1
+            print('Прогресс: {}/100%'.format(round(counter / len(groups) * 100, 2)))
+            if not data:
+                continue
+            result.append(data)
+        print('Загрузка завершена')
+        return result
 
     def disassemble_group(self, id):
         group = self.get_timeboard_by_group_id(id)
