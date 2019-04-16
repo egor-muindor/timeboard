@@ -1,6 +1,10 @@
-import json
-import sqlite3
-import time
+try:
+    import datetime
+    import json
+    import sqlite3
+except ImportError as e:
+    print('Не найдены необходимые библиотеки (%s)' % e.name)
+    exit(500)
 
 
 class DatabaseController:
@@ -11,12 +15,21 @@ class DatabaseController:
         self.__setup_db__()
 
     def __setup_db__(self):
+        """ Делает сброс БД, кроме таблицы info """
         c = self.connect.cursor()
+        c.execute('PRAGMA foreign_keys = ON;')
         c.execute('DROP TABLE IF EXISTS pairs;')
         c.execute('DROP TABLE IF EXISTS teachers;')
         c.execute('DROP TABLE IF EXISTS groups;')
         c.execute('DROP INDEX IF EXISTS pairs.pair_index;')
         self.connect.commit()
+        c.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS info (
+                name STRING (30)   NOT NULL UNIQUE,
+                status STRING (45) NOT NULL
+            );'''
+        )
         c.execute(
             '''
             CREATE TABLE IF NOT EXISTS groups (
@@ -29,7 +42,7 @@ class DatabaseController:
             CREATE TABLE IF NOT EXISTS teachers (
                 id   INTEGER      PRIMARY KEY AUTOINCREMENT NOT NULL 
                                   NOT NULL,
-                name STRING (150) NOT NULL
+                name STRING (175) NOT NULL
             );''')
         c.execute('''
             CREATE TABLE IF NOT EXISTS pairs (
@@ -38,7 +51,7 @@ class DatabaseController:
                 auditory    STRING (25)  NOT NULL,
                 subject     STRING (100) NOT NULL,
                 type        STRING (30)  NOT NULL,
-                data_from   STRING (15),
+                date_from   STRING (15),
                 date_to     STRING (15),
                 pair_number INTEGER      NOT NULL,
                 day         STRING (15)  NOT NULL,
@@ -60,6 +73,7 @@ class DatabaseController:
         c.close()
 
     def insert_group(self, group):
+        """ Вносит данные в таблицу groups """
         c = self.connect.cursor()
         c.execute('''
             INSERT INTO groups (name) VALUES (?);
@@ -68,6 +82,7 @@ class DatabaseController:
         return c.fetchone()[0]
 
     def insert_teacher(self, teacher):
+        """ Вносит данные в таблицу teachers """
         c = self.connect.cursor()
         c.execute('''
                     INSERT INTO teachers (name) VALUES (?);
@@ -76,6 +91,7 @@ class DatabaseController:
         return c.fetchone()[0]
 
     def insert_pair(self, pair):
+        """ Вносит данные в таблицу pairs """
         c = self.connect.cursor()
         c.execute('''
                     INSERT INTO pairs (
@@ -84,7 +100,7 @@ class DatabaseController:
                       day,
                       pair_number,
                       date_to,
-                      data_from,
+                      date_from,
                       type,
                       subject,
                       auditory,
@@ -93,7 +109,15 @@ class DatabaseController:
                   VALUES (?,?,?,?,?,?,?,?,?,?);
                 ''', pair)
 
+    def update_info(self, name, status):
+        """ Вносит или обновляет информацию в системной таблице info """
+        c = self.connect.cursor()
+        c.execute('''
+            INSERT OR REPLACE INTO info VALUES (?, ?) ;
+        ''', (name, status,))
+
     def find_teacher(self, name):
+        """ Возвращает id преподавателя, если не найден - вернет False """
         c = self.connect.cursor()
         c.execute("SELECT id, name from teachers where name LIKE ? LIMIT 30", ("%{}%".format(name.title()),))
         result = c.fetchall()
@@ -103,6 +127,7 @@ class DatabaseController:
             return result
 
     def find_or_new_teacher(self, name):
+        """ Возвращает id преподавателя, если не находит - создает нового"""
         c = self.connect.cursor()
         c.execute("SELECT id, name from teachers where name=?", (name,))
         result = c.fetchone()
@@ -111,10 +136,12 @@ class DatabaseController:
         else:
             return result[0]
 
-    def import_from_json(self, file):
-        f = open(file, "r", encoding='utf-8')
-        data = json.loads(f.read())
-        f.close()
+    def import_from_json(self, data, is_file=True):
+        """ Заносит все данные из json файла или массива данных """
+        if is_file:
+            f = open(data, "r", encoding='utf-8')
+            data = json.loads(f.read())
+            f.close()
         for timeboard in data:
             group_id = self.insert_group(timeboard['group']['title'])
             for key_day, day in timeboard.get('grid').items():
@@ -148,11 +175,21 @@ class DatabaseController:
                                 print(pair)
 
         self.connect.commit()
-        # self.connect.close()
+
+    def exit(self):
+        """ Необходимо выполнить после завершения действий с БД """
+        try:
+            self.update_info('update_date', '%s' % datetime.date.today())
+            self.connect.commit()
+            self.connect.close()
+            print('Finish')
+            return True
+        except():
+            return False
 
 
-t = time.time()
-db = DatabaseController('my.db')
-db.import_from_json('all_data.json')
-print('Finish')
-print(time.time() - t)
+if __name__ == '__main__':
+    """ Использовалось для тестов, пусть тут лежит """
+    db = DatabaseController('my.db')
+    db.import_from_json('all_data.json')
+    db.exit()

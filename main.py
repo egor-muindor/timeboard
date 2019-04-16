@@ -4,7 +4,6 @@ try:
     from operator import itemgetter
     from timeboard import Timeboard
 except ImportError as e:
-
     print('Не найдены необходимые библиотеки (%s)' % e.name)
     exit(500)
 
@@ -113,6 +112,7 @@ def menu():
         0) Выход
         1) Найти пары преподавателя по части ФИО
         2) Обновить базу
+        3) Скачать полную базу (нужно для db_controller.py)
         ''')
     choice = input()
     if choice in '0':
@@ -130,6 +130,7 @@ def menu():
         f = open("all_data_session.json", "w", encoding='utf-8')
         f.write(json.dumps(data, ensure_ascii=False, sort_keys=True, indent=4))
         f.close()
+
 
 try:
     file = open('data.json')

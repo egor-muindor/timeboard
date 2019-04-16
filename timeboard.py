@@ -1,7 +1,6 @@
 try:
     import requests
 except ImportError as e:
-
     print('Не найдены необходимые библиотеки (%s)' % e.name)
     exit(500)
 
@@ -15,6 +14,7 @@ class Timeboard():
         self.group_list = self.get_group_list()
 
     def get_cookies(self):
+        """ Получает печеньки с сайта, тк они необходимы для сбора информации """
         main_html = requests.get("https://rasp.dmami.ru").text
         cut_1 = main_html.find('document.cookie="') + len('document.cookie="')
         cut_2 = main_html.find(';Path=')
@@ -22,11 +22,13 @@ class Timeboard():
         return main_html[cut_1:cut_2]
 
     def get_group_list(self):
+        """ Скачивает список всех групп """
         group_list = self.session.get("https://rasp.dmami.ru/groups-list.json").json()['groups']
 
         return group_list
 
     def get_timeboard_by_group_id(self, id, session=0):
+        """ Скачивает расписание группы и возвращает json """
         headers = {
             'cookie': self.cookies,
             'Referer': 'https://rasp.dmami.ru/site/',
@@ -37,7 +39,7 @@ class Timeboard():
         }
         try:
             timeboard = self.session.get("https://rasp.dmami.ru/site/group", headers=headers, params=group).json()
-        except:
+        except():
             return False
 
         if timeboard['status'] == 'error':
@@ -45,21 +47,25 @@ class Timeboard():
 
         return timeboard
 
-    def download_all_groups(self, session=0):
+    def download_all_groups(self, session=0, debug=False):
+        """ Скачивает пары всех групп """
         groups = self.group_list
         result = []
         counter = 0
         for group in groups:
             data = self.get_timeboard_by_group_id(group, session)
-            counter += 1
-            print('Прогресс: {}/100%'.format(round(counter / len(groups) * 100, 2)))
+            if debug:
+                counter += 1
+                print('Прогресс: {}/100%'.format(round(counter / len(groups) * 100, 2)))
             if not data:
                 continue
             result.append(data)
-        print('Загрузка завершена')
+
         return result
 
     def disassemble_group(self, id):
+        """ Парсит расписание группы по id и возвращает
+        список пар с полями {teacher, pair, day, number_pair} """
         group = self.get_timeboard_by_group_id(id)
         if not group:
             return False
@@ -68,7 +74,6 @@ class Timeboard():
             for key_pair, pair in day.items():
                 if not pair:
                     continue
-
                 last_module = len(pair) - 1
                 teacher = pair[last_module]['teacher']
                 if teacher != '':
