@@ -1,0 +1,6 @@
+{
+  "database": "timeboard",
+  "host": "localhost",
+  "user": "user",
+  "password": "secret"
+}
