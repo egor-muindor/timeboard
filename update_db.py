@@ -8,11 +8,14 @@ except ImportError as e:
 
 if __name__ == '__main__':
     t = Timeboard()
+    db = DatabaseController()
+
     data = t.download_all_groups(debug=False)  # debug включает вывод состояния загрузки в %
+
     # f = open("data.json", "w", encoding='utf-8')
     # f.write(json.dumps(data, ensure_ascii=False, sort_keys=True, indent=4))
     # f.close()
-    db = DatabaseController()
-    db.import_from_json(data, is_file=True)  # is_file=True если в аттрибуте data передается json файл
+
+    db.import_from_json(data, is_file=False)  # is_file=True если в аттрибуте data передается json файл
     db.exit()
     exit(0)
