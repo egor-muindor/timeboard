@@ -145,6 +145,7 @@ class DatabaseController:
                 `pair_number` INT      NOT NULL,
                 `day`         VARCHAR  (15)  NOT NULL,
                 `is_session`  BIT     NOT NULL,
+                `key_auditory` VARCHAR (30) NOT NULL,
                 PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci AUTO_INCREMENT=1;''')
         c.execute('''
@@ -242,9 +243,11 @@ class DatabaseController:
         c = self.connect.cursor()
         c.execute(
             """
-            SELECT `id`, `day`, `pair_number`, `date_to`, `date_from`, `type`, `subject`, `is_session`
-            FROM pairs WHERE `day`=%s and `pair_number`=%s and `date_to`=%s and 
-            `date_from`=%s and `type`=%s and `subject`=%s and `is_session`=%s""", pair)
+            SELECT `id`, `day`, `pair_number`, `date_to`, `date_from`, `type`, `subject`, `is_session`, `key_auditory`
+            FROM pairs 
+            WHERE `day`=%s and `pair_number`=%s and `date_to`=%s and 
+            `date_from`=%s and `type`=%s and `subject`=%s and `is_session`=%s and `key_auditory`=%s
+            """, pair)
         available = c.fetchone()
         if available:
             return available['id']
@@ -257,15 +260,16 @@ class DatabaseController:
                       `date_from`,
                       `type`,
                       `subject`,
-                      `is_session`
+                      `is_session`,
+                      `key_auditory`
                   )
-                  VALUES (%s,%s,%s,%s,%s,%s,%s);
+                  VALUES (%s,%s,%s,%s,%s,%s,%s, %s);
                 ''', pair)
         c.execute(
             """
-            SELECT `id`, `day`, `pair_number`, `date_to`, `date_from`, `type`, `subject`, `is_session`
+            SELECT `id`, `day`, `pair_number`, `date_to`, `date_from`, `type`, `subject`, `is_session`,`key_auditory`
             FROM pairs WHERE `day`=%s and `pair_number`=%s and `date_to`=%s and 
-            `date_from`=%s and `type`=%s and `subject`=%s and `is_session`=%s""", pair)
+            `date_from`=%s and `type`=%s and `subject`=%s and `is_session`=%s and `key_auditory`=%s""", pair)
         return c.fetchone()['id']
 
     def update_info(self, name, status):
@@ -346,6 +350,8 @@ class DatabaseController:
             f.close()
         self.reset_pair_data()
         for timeboard in data:
+            if len(timeboard['group']['title']) > 15:
+                continue
             group_id = self.insert_group(timeboard['group']['title'])
             for key_day, day in timeboard.get('grid').items():
                 for key_pair, pair_module in day.items():
@@ -363,7 +369,8 @@ class DatabaseController:
                                 pair['date_from'],
                                 pair['type'],
                                 pair['subject'],
-                                timeboard['isSession']
+                                timeboard['isSession'],
+                                pair['auditories'][0]['title']
                             )
                             pair_id = self.insert_pair(pair_data)
                             self.find_or_new_group_pair(group_id, pair_id)
